@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Intersections of Two Straight Lines</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- KaTeX for LaTeX Math Rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; overflow: hidden; overscroll-behavior: none; }
+        .math { font-family: 'Times New Roman', Times, serif; font-style: italic; }
+        canvas { touch-action: none; cursor: crosshair; }
+        .dragging { cursor: grabbing !important; }
+        
+        /* Custom scrollbar for sidebar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen w-screen flex flex-col md:flex-row">
+
+    <!-- Control Panel / Sidebar -->
+    <div class="w-full md:w-80 lg:w-96 bg-white shadow-xl z-10 flex flex-col h-auto max-h-[50vh] md:max-h-screen md:h-full overflow-y-auto border-r border-slate-200 shrink-0">
+        <div class="p-5 border-b border-slate-100 bg-slate-800 text-white">
+            <h1 class="text-xl font-bold tracking-tight">Line Intersections</h1>
+            <p class="text-xs text-slate-300 mt-1 opacity-90">Drag the colored points to explore.</p>
+        </div>
+
+        <div class="p-5 flex-1 flex flex-col gap-6">
+            
+            <!-- Line A Info -->
+            <div class="bg-blue-50/50 rounded-xl p-4 border border-blue-100 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                <h2 class="text-sm font-bold text-blue-700 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-blue-500"></div> Line A
+                </h2>
+                <div class="space-y-2">
+                    <div>
+                        <span class="text-xs text-slate-500 font-medium">Equation</span>
+                        <div class="text-lg font-semibold text-slate-700 math" id="eq-a">y = x + 0</div>
+                    </div>
+                    <div class="flex gap-4" id="details-a">
+                        <div>
+                            <span class="text-xs text-slate-500 font-medium">Slope (<span class="math">m</span>)</span>
+                            <div class="text-sm font-medium text-slate-700" id="slope-a">1.00</div>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-500 font-medium">Y-Int (<span class="math">c</span>)</span>
+                            <div class="text-sm font-medium text-slate-700" id="yint-a">0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Line B Info -->
+            <div class="bg-rose-50/50 rounded-xl p-4 border border-rose-100 shadow-sm relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-rose-500"></div>
+                <h2 class="text-sm font-bold text-rose-700 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <div class="w-3 h-3 rounded-full bg-rose-500"></div> Line B
+                </h2>
+                <div class="space-y-2">
+                    <div>
+                        <span class="text-xs text-slate-500 font-medium">Equation</span>
+                        <div class="text-lg font-semibold text-slate-700 math" id="eq-b">y = -x + 4</div>
+                    </div>
+                    <div class="flex gap-4" id="details-b">
+                        <div>
+                            <span class="text-xs text-slate-500 font-medium">Slope (<span class="math">m</span>)</span>
+                            <div class="text-sm font-medium text-slate-700" id="slope-b">-1.00</div>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-500 font-medium">Y-Int (<span class="math">c</span>)</span>
+                            <div class="text-sm font-medium text-slate-700" id="yint-b">4.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Intersection Info -->
+            <div id="normal-intersection-panel" class="bg-emerald-50 rounded-xl p-4 border border-emerald-200 shadow-sm relative overflow-hidden mt-2">
+                <div class="absolute top-0 left-0 w-1 h-full bg-emerald-500"></div>
+                <h2 class="text-sm font-bold text-emerald-800 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Intersection Status
+                </h2>
+                <div id="intersection-status" class="text-xl font-bold text-emerald-700 tracking-tight">
+                    (2.00, 2.00)
+                </div>
+                <div id="intersection-desc" class="text-xs text-emerald-600 mt-1 font-medium">
+                    The lines intersect at exactly one point.
+                </div>
+            </div>
+            
+            <!-- Quiz Panel (Hidden by default) -->
+            <div id="quiz-panel" class="hidden bg-indigo-50 rounded-xl p-4 border border-indigo-200 shadow-sm relative overflow-hidden mt-2">
+                <div class="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-bold text-indigo-800 tracking-wider flex items-center gap-2">
+                        <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span id="quiz-player-name">Player</span>
+                    </h2>
+                    <div class="text-sm font-bold text-indigo-700 bg-indigo-100 px-2 py-1 rounded">Score: <span id="quiz-score">0/0</span></div>
+                </div>
+                <div class="text-sm font-medium text-indigo-900 mb-3 text-center font-semibold">How many points of intersection?</div>
+                <div class="flex gap-2 mb-3">
+                    <button class="quiz-ans-btn flex-1 bg-white border border-indigo-300 text-indigo-700 font-bold rounded py-1.5 hover:bg-indigo-100 transition-colors shadow-sm" data-ans="parallel">0</button>
+                    <button class="quiz-ans-btn flex-1 bg-white border border-indigo-300 text-indigo-700 font-bold rounded py-1.5 hover:bg-indigo-100 transition-colors shadow-sm" data-ans="intersect">1</button>
+                    <button class="quiz-ans-btn flex-1 bg-white border border-indigo-300 text-indigo-700 font-bold rounded py-1.5 hover:bg-indigo-100 transition-colors shadow-sm" data-ans="coincident">∞</button>
+                </div>
+                
+                <div class="flex gap-2 mb-3">
+                    <button id="quiz-hint-btn" class="w-full text-xs bg-amber-100 text-amber-700 border border-amber-300 font-bold rounded py-2 hover:bg-amber-200 transition-colors shadow-sm">
+                        💡 Show Hint (Reveal Figure)
+                    </button>
+                    <button id="quiz-next-btn" class="hidden w-full text-xs bg-indigo-600 text-white font-bold rounded py-2 hover:bg-indigo-700 transition-colors shadow-sm">
+                        Next Question ➔
+                    </button>
+                </div>
+
+                <button id="exit-quiz-btn" class="w-full text-xs text-indigo-500 hover:text-indigo-700 underline text-center">Exit Quiz Mode</button>
+            </div>
+
+            <div id="quiz-buttons" class="flex gap-2 mt-2">
+                <button id="enter-quiz-btn" class="flex-1 py-2.5 px-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm text-sm">
+                    Quiz Mode 1<br><span class="text-xs font-normal opacity-80">(y = mx + c)</span>
+                </button>
+                <button id="enter-quiz2-btn" class="flex-1 py-2.5 px-2 bg-violet-600 text-white font-medium rounded-lg hover:bg-violet-700 transition-colors shadow-sm text-sm">
+                    Quiz Mode 2<br><span class="text-xs font-normal opacity-80">(Ax + By + C = 0)</span>
+                </button>
+            </div>
+
+            <button id="reset-btn" class="mt-auto w-full py-2.5 px-4 bg-white border border-slate-300 text-slate-600 font-medium rounded-lg hover:bg-slate-50 hover:text-slate-800 transition-colors shadow-sm text-sm">
+                Reset Positions
+            </button>
+        </div>
+    </div>
+
+    <!-- Canvas Area -->
+    <div class="flex-1 relative bg-slate-100" id="canvas-container">
+        <canvas id="math-canvas" class="absolute inset-0 w-full h-full"></canvas>
+        
+        <!-- Legend Overlay -->
+        <div id="legend-overlay" class="absolute bottom-6 right-6 bg-white/90 backdrop-blur border border-slate-200 p-3 rounded-lg shadow-sm text-xs font-medium text-slate-600 pointer-events-none hidden sm:block">
+            <div class="flex items-center gap-2 mb-1">
+                <div class="w-3 h-3 rounded-full bg-blue-500"></div> Drag to move Line A
+            </div>
+            <div class="flex items-center gap-2 mb-1">
+                <div class="w-3 h-3 rounded-full bg-rose-500"></div> Drag to move Line B
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full border-2 border-emerald-500 bg-white"></div> Intersection Point
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Name Modal -->
+    <div id="name-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-2xl shadow-2xl w-80 max-w-[90%] transform transition-all">
+            <h3 class="font-bold text-xl text-slate-800 mb-2">Quiz Mode</h3>
+            <p class="text-sm text-slate-500 mb-4">Test your knowledge! Enter your name to begin.</p>
+            <input type="text" id="player-name-input" placeholder="Your Name" class="w-full border border-slate-300 px-3 py-2 rounded-lg mb-5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off">
+            <div class="flex justify-end gap-3">
+                <button id="cancel-quiz-btn" class="px-4 py-2 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors">Cancel</button>
+                <button id="start-quiz-submit-btn" class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm">Start Quiz</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Setup Canvas & State
+        const canvas = document.getElementById('math-canvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const container = document.getElementById('canvas-container');
+
+        // UI Elements
+        const ui = {
+            eqA: document.getElementById('eq-a'),
+            slopeA: document.getElementById('slope-a'),
+            yintA: document.getElementById('yint-a'),
+            detailsA: document.getElementById('details-a'),
+            eqB: document.getElementById('eq-b'),
+            slopeB: document.getElementById('slope-b'),
+            yintB: document.getElementById('yint-b'),
+            detailsB: document.getElementById('details-b'),
+            intStatus: document.getElementById('intersection-status'),
+            intDesc: document.getElementById('intersection-desc'),
+            
+            // Quiz Elements
+            normalPanel: document.getElementById('normal-intersection-panel'),
+            quizPanel: document.getElementById('quiz-panel'),
+            quizButtons: document.getElementById('quiz-buttons'),
+            enterQuizBtn: document.getElementById('enter-quiz-btn'),
+            enterQuiz2Btn: document.getElementById('enter-quiz2-btn'),
+            resetBtn: document.getElementById('reset-btn'),
+            nameModal: document.getElementById('name-modal'),
+            playerNameInput: document.getElementById('player-name-input'),
+            startQuizSubmitBtn: document.getElementById('start-quiz-submit-btn'),
+            cancelQuizBtn: document.getElementById('cancel-quiz-btn'),
+            exitQuizBtn: document.getElementById('exit-quiz-btn'),
+            quizPlayerName: document.getElementById('quiz-player-name'),
+            quizScore: document.getElementById('quiz-score'),
+            quizAnsBtns: document.querySelectorAll('.quiz-ans-btn'),
+            legendOverlay: document.getElementById('legend-overlay'),
+            
+            // Hint and Next buttons
+            quizHintBtn: document.getElementById('quiz-hint-btn'),
+            quizNextBtn: document.getElementById('quiz-next-btn')
+        };
+        
+        // Google Apps Script Web App URL
+        const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDtmHzSfdYwN3EO7UpJlXJMs4SPTyxfYtGrxG_RGqKS3o1XYqbyXVg04j52a5L5I8/exec";
+        
+        // Quiz State
+        let activeQuizMode = 0; // 0: none, 1: Quiz Mode 1, 2: Quiz Mode 2
+        let pendingQuizMode = 0;
+        let correctAnswersCount = 0;
+        let questionsAttemptedCount = 0;
+        let currentCorrectAnswer = '';
+        let quizAnswering = false;
+        let quizHintUsed = false;
+        let quizTimeoutId = null;
+        let quizScaleA = 1;
+        let quizScaleB = 1;
+        let quizSessionId = '';
+
+        // Coordinate System Setup
+        let width = 0, height = 0;
+        let scale = 40; // Pixels per math unit
+        let offsetX = 0, offsetY = 0; // Origin offsets from center
+
+        // State: The 4 control points in Cartesian (math) coordinates
+        let points = [];
+        let draggedPoint = null;
+
+        function initPoints() {
+            points = [
+                { id: 'A1', line: 'A', x: -3, y: -3, color: '#3b82f6' }, // Blue Line Point 1
+                { id: 'A2', line: 'A', x: 3, y: 3, color: '#3b82f6' },   // Blue Line Point 2
+                { id: 'B1', line: 'B', x: -1, y: 5, color: '#ef4444' },  // Red Line Point 1
+                { id: 'B2', line: 'B', x: 5, y: -1, color: '#ef4444' }   // Red Line Point 2
+            ];
+            quizScaleA = 1;
+            quizScaleB = 1;
+        }
+
+        // --- Math Helpers ---
+
+        // Convert world Cartesian (x,y) to screen Canvas (sx, sy)
+        function toScreen(x, y) {
+            return {
+                sx: width / 2 + offsetX + x * scale,
+                sy: height / 2 + offsetY - y * scale // y goes up in math, down in canvas
+            };
+        }
+
+        // Convert screen Canvas (sx, sy) to world Cartesian (x,y)
+        function toWorld(sx, sy) {
+            return {
+                x: (sx - width / 2 - offsetX) / scale,
+                y: -(sy - height / 2 - offsetY) / scale
+            };
+        }
+
+        // Format a number for display, stripping unnecessary decimals
+        function fmt(num) {
+            if (Math.abs(num) < 0.005) return "0.00";
+            return num.toFixed(2).replace(/\.?0+$/, '');
+        }
+
+        // Calculate and format line equations (Slope-Intercept and General Form)
+        function getLineInfo(p1, p2, scaleFactor = 1) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            
+            let m, c, eq, isVertical;
+            if (Math.abs(dx) < 1e-5) {
+                // Vertical line
+                m = Infinity; c = Infinity; eq = `x = ${fmt(p1.x)}`; isVertical = true;
+            } else {
+                isVertical = false;
+                m = dy / dx;
+                c = p1.y - m * p1.x;
+                
+                if (scaleFactor > 1) {
+                    // Create unsimplified fractional representation for Quiz Mode 1
+                    const numM = Math.round(scaleFactor * m);
+                    const denM = scaleFactor;
+                    
+                    let slopePart = '';
+                    if (numM !== 0) {
+                        const sign = numM < 0 ? '-' : '';
+                        slopePart = `${sign}\\frac{${Math.abs(numM)}}{${denM}}x`;
+                    }
+                    
+                    const numC = Math.round(scaleFactor * c);
+                    const denC = scaleFactor;
+                    let interceptPart = '';
+                    if (numC !== 0) {
+                        const sign = numC < 0 ? ' - ' : ' + ';
+                        interceptPart = `${sign}\\frac{${Math.abs(numC)}}{${denC}}`;
+                    }
+                    
+                    eq = `y = `;
+                    if (slopePart === '' && interceptPart === '') {
+                        eq += `0`;
+                    } else {
+                        let rightSide = `${slopePart}${interceptPart}`.trim();
+                        if (rightSide.startsWith('+')) rightSide = rightSide.substring(1).trim();
+                        eq += rightSide;
+                    }
+                } else {
+                    eq = `y = `;
+                    if (Math.abs(m) < 1e-5) {
+                        eq += `${fmt(c)}`; // Horizontal
+                    } else {
+                        if (Math.abs(m - 1) < 1e-5) eq += `x`;
+                        else if (Math.abs(m + 1) < 1e-5) eq += `-x`;
+                        else eq += `${fmt(m)}x`;
+                        
+                        if (Math.abs(c) > 1e-5) {
+                            eq += c > 0 ? ` + ${fmt(c)}` : ` - ${fmt(Math.abs(c))}`;
+                        }
+                    }
+                }
+            }
+
+            // Calculate General Form Ax + By + C = 0
+            let A = Math.round(p1.y - p2.y);
+            let B = Math.round(p2.x - p1.x);
+            let C = Math.round(p1.x * p2.y - p2.x * p1.y);
+
+            const gcd = (a, b) => {
+                a = Math.abs(a); b = Math.abs(b);
+                while (b) { let t = b; b = a % b; a = t; }
+                return a;
+            };
+            let g = gcd(A, gcd(B, C));
+            if (g > 0) { A/=g; B/=g; C/=g; }
+            if (A < 0 || (A === 0 && B < 0)) { A = -A; B = -B; C = -C; }
+            
+            // Apply unsimplified scaling factor
+            A *= scaleFactor;
+            B *= scaleFactor;
+            C *= scaleFactor;
+            
+            let eqGen = '';
+            if (A !== 0) { 
+                if (A === 1) eqGen += 'x';
+                else if (A === -1) eqGen += '-x';
+                else eqGen += A + 'x';
+            }
+            if (B !== 0) {
+                if (eqGen !== '') {
+                    eqGen += B > 0 ? ' + ' : ' - ';
+                    const absB = Math.abs(B);
+                    eqGen += (absB === 1 ? 'y' : absB + 'y');
+                } else {
+                    if (B === 1) eqGen += 'y';
+                    else if (B === -1) eqGen += '-y';
+                    else eqGen += B + 'y';
+                }
+            }
+            if (C !== 0) {
+                if (eqGen !== '') {
+                    eqGen += C > 0 ? ' + ' + C : ' - ' + Math.abs(C);
+                } else {
+                    eqGen += C;
+                }
+            }
+            if (eqGen === '') eqGen = '0';
+            eqGen += ' = 0';
+
+            return { m, c, eq, eqGen, isVertical };
+        }
+
+        // Find intersection of line (p1,p2) and line (p3,p4)
+        function findIntersection(p1, p2, p3, p4) {
+            const numA = (p1.x*p2.y - p1.y*p2.x);
+            const numB = (p3.x*p4.y - p3.y*p4.x);
+            const dx12 = p1.x - p2.x;
+            const dy12 = p1.y - p2.y;
+            const dx34 = p3.x - p4.x;
+            const dy34 = p3.y - p4.y;
+            
+            const denom = dx12 * dy34 - dy12 * dx34;
+
+            if (Math.abs(denom) < 1e-6) {
+                // Lines are parallel or coincident
+                // Test distance from p3 to line (p1,p2) using mathematically correct Line Equation Distance Numerator
+                const C1 = dx12 * p1.y - dy12 * p1.x; // Constant C for line 1 where Eq is: dy12*x - dx12*y + C1 = 0
+                const distNumerator = Math.abs(dy12 * p3.x - dx12 * p3.y + C1);
+                
+                if (distNumerator < 1e-4) {
+                    return { type: 'coincident' };
+                }
+                return { type: 'parallel' };
+            }
+
+            const x = (numA * dx34 - dx12 * numB) / denom;
+            const y = (numA * dy34 - dy12 * numB) / denom;
+            
+            return { type: 'intersect', x, y };
+        }
+
+        // --- Rendering ---
+
+        function resize() {
+            // High DPI Canvas support
+            const dpr = window.devicePixelRatio || 1;
+            const rect = container.getBoundingClientRect();
+            
+            width = rect.width;
+            height = rect.height;
+            
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            
+            ctx.scale(dpr, dpr);
+            
+            // Adjust scale slightly based on screen width for mobile
+            if (width < 500) scale = 30;
+            else scale = 45;
+            
+            render();
+        }
+
+        function drawGridAndAxes() {
+            ctx.fillStyle = '#f8fafc'; // bg-slate-50
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.lineWidth = 1;
+            
+            const origin = toScreen(0, 0);
+            
+            // Draw Grid
+            ctx.strokeStyle = '#e2e8f0'; // slate-200
+            
+            // Vertical grid lines
+            const xMin = toWorld(0, 0).x;
+            const xMax = toWorld(width, 0).x;
+            const firstX = Math.floor(xMin);
+            const lastX = Math.ceil(xMax);
+            
+            ctx.beginPath();
+            for (let x = firstX; x <= lastX; x++) {
+                const screenX = toScreen(x, 0).sx;
+                ctx.moveTo(screenX, 0);
+                ctx.lineTo(screenX, height);
+            }
+            // Horizontal grid lines
+            const yMin = toWorld(0, height).y;
+            const yMax = toWorld(0, 0).y;
+            const firstY = Math.floor(yMin);
+            const lastY = Math.ceil(yMax);
+            
+            for (let y = firstY; y <= lastY; y++) {
+                const screenY = toScreen(0, y).sy;
+                ctx.moveTo(0, screenY);
+                ctx.lineTo(width, screenY);
+            }
+            ctx.stroke();
+
+            // Draw Axes
+            ctx.strokeStyle = '#94a3b8'; // slate-400
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            // X-axis
+            ctx.moveTo(0, origin.sy);
+            ctx.lineTo(width, origin.sy);
+            // Y-axis
+            ctx.moveTo(origin.sx, 0);
+            ctx.lineTo(origin.sx, height);
+            ctx.stroke();
+
+            // Axis labels/ticks
+            ctx.fillStyle = '#64748b'; // slate-500
+            ctx.font = '14px Inter'; // ENLARGED FONT
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            for (let x = firstX; x <= lastX; x++) {
+                if (x !== 0 && x % 2 === 0) { // Every 2 units
+                    const sx = toScreen(x, 0).sx;
+                    ctx.fillText(x, sx, origin.sy + 10);
+                    ctx.beginPath();
+                    ctx.moveTo(sx, origin.sy - 4);
+                    ctx.lineTo(sx, origin.sy + 4);
+                    ctx.stroke();
+                }
+            }
+            
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'middle';
+            for (let y = firstY; y <= lastY; y++) {
+                if (y !== 0 && y % 2 === 0) {
+                    const sy = toScreen(0, y).sy;
+                    ctx.fillText(y, origin.sx - 10, sy);
+                    ctx.beginPath();
+                    ctx.moveTo(origin.sx - 4, sy);
+                    ctx.lineTo(origin.sx + 4, sy);
+                    ctx.stroke();
+                }
+            }
+            
+            // Origin (0)
+            ctx.textAlign = 'right';
+            ctx.textBaseline = 'top';
+            ctx.fillText('0', origin.sx - 10, origin.sy + 10);
+        }
+
+        function drawInfiniteLine(p1, p2, color) {
+            const dx = p2.x - p1.x;
+            const dy = p2.y - p1.y;
+            
+            // If endpoints are snapped exactly on top of each other, avoid drawing line
+            if (Math.abs(dx) < 1e-6 && Math.abs(dy) < 1e-6) return;
+
+            const startP = { x: p1.x - dx * 1000, y: p1.y - dy * 1000 };
+            const endP = { x: p2.x + dx * 1000, y: p2.y + dy * 1000 };
+
+            const sStart = toScreen(startP.x, startP.y);
+            const sEnd = toScreen(endP.x, endP.y);
+
+            ctx.beginPath();
+            ctx.moveTo(sStart.sx, sStart.sy);
+            ctx.lineTo(sEnd.sx, sEnd.sy);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.shadowColor = color + '66'; 
+            ctx.shadowBlur = 8;
+            ctx.stroke();
+            
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+        }
+
+        function drawControlPoints() {
+            for (const p of points) {
+                const s = toScreen(p.x, p.y);
+                
+                // Outer glow if dragging
+                if (draggedPoint === p) {
+                    ctx.beginPath();
+                    ctx.arc(s.sx, s.sy, 16, 0, Math.PI * 2);
+                    ctx.fillStyle = p.color + '40'; // 25% opacity
+                    ctx.fill();
+                }
+
+                ctx.beginPath();
+                ctx.arc(s.sx, s.sy, 8, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = p.color;
+                ctx.stroke();
+            }
+        }
+
+        // Helper to render LaTeX
+        function renderMath(element, mathString) {
+            if (window.katex) {
+                katex.render(mathString, element, { throwOnError: false, displayMode: false });
+            } else {
+                element.textContent = mathString;
+            }
+        }
+
+        function updateUI(lineA, lineB, intersection) {
+            // Update Line A
+            renderMath(ui.eqA, activeQuizMode === 2 ? lineA.eqGen : lineA.eq);
+            renderMath(ui.slopeA, lineA.isVertical ? '\\text{Undef.}' : fmt(lineA.m));
+            renderMath(ui.yintA, lineA.isVertical ? '\\text{None}' : fmt(lineA.c));
+            
+            if (activeQuizMode === 2) ui.detailsA.classList.add('hidden');
+            else ui.detailsA.classList.remove('hidden');
+
+            // Update Line B
+            renderMath(ui.eqB, activeQuizMode === 2 ? lineB.eqGen : lineB.eq);
+            renderMath(ui.slopeB, lineB.isVertical ? '\\text{Undef.}' : fmt(lineB.m));
+            renderMath(ui.yintB, lineB.isVertical ? '\\text{None}' : fmt(lineB.c));
+
+            if (activeQuizMode === 2) ui.detailsB.classList.add('hidden');
+            else ui.detailsB.classList.remove('hidden');
+
+            if (activeQuizMode !== 0) return; // Don't update or show the answer panel in quiz mode
+
+            // Update Intersection Panel
+            const panel = ui.normalPanel;
+            
+            // Remove previous color classes
+            panel.classList.remove('bg-emerald-50', 'border-emerald-200', 'bg-amber-50', 'border-amber-200', 'bg-purple-50', 'border-purple-200');
+            const icon = panel.querySelector('svg');
+            const stripe = panel.querySelector('.absolute');
+            
+            if (intersection.type === 'intersect') {
+                panel.classList.add('bg-emerald-50', 'border-emerald-200');
+                stripe.className = 'absolute top-0 left-0 w-1 h-full bg-emerald-500';
+                ui.intStatus.className = 'text-2xl font-bold text-emerald-700 tracking-tight';
+                renderMath(ui.intStatus, `(${fmt(intersection.x)}, ${fmt(intersection.y)})`);
+                ui.intDesc.textContent = "The lines intersect at exactly one point.";
+                ui.intDesc.className = "text-xs text-emerald-600 mt-1 font-medium";
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>`;
+                icon.className = "w-4 h-4 text-emerald-600";
+            } else if (intersection.type === 'parallel') {
+                panel.classList.add('bg-amber-50', 'border-amber-200');
+                stripe.className = 'absolute top-0 left-0 w-1 h-full bg-amber-500';
+                ui.intStatus.className = 'text-xl font-bold text-amber-700 tracking-tight';
+                ui.intStatus.textContent = "No Intersection";
+                ui.intDesc.textContent = "The lines are strictly parallel. They share the same slope but different intercepts.";
+                ui.intDesc.className = "text-xs text-amber-600 mt-1 font-medium";
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>`;
+                icon.className = "w-4 h-4 text-amber-600";
+            } else if (intersection.type === 'coincident') {
+                panel.classList.add('bg-purple-50', 'border-purple-200');
+                stripe.className = 'absolute top-0 left-0 w-1 h-full bg-purple-500';
+                ui.intStatus.className = 'text-lg font-bold text-purple-700 tracking-tight';
+                ui.intStatus.textContent = "Infinite Points of Intersection";
+                ui.intDesc.textContent = "Line A is exactly equal to Line B. They overlap perfectly.";
+                ui.intDesc.className = "text-xs text-purple-600 mt-1 font-medium";
+                icon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4h16v16H4z"></path>`;
+                icon.className = "w-4 h-4 text-purple-600";
+            }
+        }
+
+        function render() {
+            drawGridAndAxes();
+
+            // Determine if the visual diagram should be shown
+            const showFigure = (activeQuizMode === 0) || quizAnswering || quizHintUsed;
+
+            if (showFigure) {
+                // Draw Lines
+                drawInfiniteLine(points[0], points[1], points[0].color);
+                drawInfiniteLine(points[2], points[3], points[2].color);
+            }
+
+            // Math computations (with active quiz scale factors)
+            const infoA = getLineInfo(points[0], points[1], activeQuizMode !== 0 ? quizScaleA : 1);
+            const infoB = getLineInfo(points[2], points[3], activeQuizMode !== 0 ? quizScaleB : 1);
+            const intersection = findIntersection(points[0], points[1], points[2], points[3]);
+
+            // Draw intersection marker if applicable
+            if (showFigure && intersection.type === 'intersect') {
+                const sInt = toScreen(intersection.x, intersection.y);
+                
+                // Pulsing outer ring
+                const time = Date.now() / 300;
+                const pulseRad = 10 + Math.sin(time) * 3;
+                
+                ctx.beginPath();
+                ctx.arc(sInt.sx, sInt.sy, pulseRad, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(16, 185, 129, 0.2)'; // Emerald transparent
+                ctx.fill();
+
+                // Inner dot
+                ctx.beginPath();
+                ctx.arc(sInt.sx, sInt.sy, 5, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#10b981'; // Emerald 500
+                ctx.stroke();
+
+                // Coordinate label on canvas
+                ctx.fillStyle = '#065f46'; // Emerald 900
+                ctx.font = '600 16px Inter'; // ENLARGED FONT
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'bottom';
+                
+                // Check edge bounds to prevent label cutoff
+                let textX = sInt.sx + 10;
+                let textY = sInt.sy - 10;
+                if (textX > width - 80) textX = sInt.sx - 80;
+                if (textY < 25) textY = sInt.sy + 25;
+
+                ctx.fillText(`(${fmt(intersection.x)}, ${fmt(intersection.y)})`, textX, textY);
+            }
+
+            if (showFigure) {
+                drawControlPoints();
+            } else {
+                // In Quiz Mode before answering, show a helper label on the empty canvas to focus on the equations
+                ctx.fillStyle = '#64748b'; // slate-500
+                ctx.font = '500 16px Inter';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Review equations in the sidebar to answer!', width / 2 + offsetX, height / 2 + offsetY - 40);
+            }
+
+            updateUI(infoA, infoB, intersection);
+        }
+
+        // --- Interaction Logic ---
+
+        function getEventPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            
+            if (e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+            
+            return {
+                sx: clientX - rect.left,
+                sy: clientY - rect.top
+            };
+        }
+
+        function handlePointerDown(e) {
+            if (activeQuizMode !== 0) return; // Disable dragging points during quiz
+            
+            const pos = getEventPos(e);
+            
+            // Find clicked point (in reverse order to catch top-most if overlapping)
+            const HitRadius = 25; // larger hit area for fingers
+            for (let i = points.length - 1; i >= 0; i--) {
+                const p = points[i];
+                const s = toScreen(p.x, p.y);
+                const dist = Math.hypot(s.sx - pos.sx, s.sy - pos.sy);
+                
+                if (dist < HitRadius) {
+                    draggedPoint = p;
+                    canvas.classList.add('dragging');
+                    e.preventDefault(); // Stop scrolling on mobile
+                    render(); // to show highlight
+                    return;
+                }
+            }
+        }
+
+        function handlePointerMove(e) {
+            if (!draggedPoint) return;
+            e.preventDefault();
+            
+            const pos = getEventPos(e);
+            const wPos = toWorld(pos.sx, pos.sy);
+            
+            // Snap to integral coordinates
+            draggedPoint.x = Math.round(wPos.x);
+            draggedPoint.y = Math.round(wPos.y);
+            
+            render();
+        }
+
+        function handlePointerUp() {
+            if (draggedPoint) {
+                draggedPoint = null;
+                canvas.classList.remove('dragging');
+                render(); // to remove highlight
+            }
+        }
+
+        // Event Listeners
+        canvas.addEventListener('mousedown', handlePointerDown);
+        window.addEventListener('mousemove', handlePointerMove);
+        window.addEventListener('mouseup', handlePointerUp);
+
+        canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
+        window.addEventListener('touchmove', handlePointerMove, { passive: false });
+        window.addEventListener('touchend', handlePointerUp);
+        
+        window.addEventListener('resize', resize);
+        
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            initPoints();
+            render();
+        });
+
+        // --- Quiz Logic ---
+        function generateQuizQuestion() {
+            // Equal 1:1:1 distribution probability
+            const types = ['intersect', 'parallel', 'coincident'];
+            currentCorrectAnswer = types[Math.floor(Math.random() * types.length)];
+            
+            quizScaleA = 1;
+            quizScaleB = 1;
+
+            // Generate random readable parameters (-2 to 2 for slope, -3 to 3 for intercept)
+            let mA = Math.floor(Math.random() * 5) - 2; 
+            let cA = Math.floor(Math.random() * 7) - 3; 
+            
+            let mB, cB;
+            if (currentCorrectAnswer === 'coincident') {
+                mB = mA;
+                cB = cA;
+                // Randomly choose Line A or Line B to be mathematically unsimplified
+                const unsimplifiedLine = Math.random() < 0.5 ? 'A' : 'B';
+                const factor = [2, 3, 4, 5][Math.floor(Math.random() * 4)];
+                if (unsimplifiedLine === 'A') {
+                    quizScaleA = factor;
+                } else {
+                    quizScaleB = factor;
+                }
+            } else if (currentCorrectAnswer === 'parallel') {
+                mB = mA;
+                cB = cA;
+                while(cB === cA) { cB = Math.floor(Math.random() * 7) - 3; }
+            } else {
+                mB = mA;
+                while(mB === mA) { mB = Math.floor(Math.random() * 5) - 2; }
+                cB = Math.floor(Math.random() * 7) - 3;
+            }
+            
+            // Convert to coordinates and set points
+            points[0] = { id: 'A1', line: 'A', x: -3, y: mA*(-3) + cA, color: '#3b82f6' };
+            points[1] = { id: 'A2', line: 'A', x: 3,  y: mA*(3) + cA,  color: '#3b82f6' };
+            points[2] = { id: 'B1', line: 'B', x: -3, y: mB*(-3) + cB, color: '#ef4444' };
+            points[3] = { id: 'B2', line: 'B', x: 3,  y: mB*(3) + cB,  color: '#ef4444' };
+            
+            quizAnswering = false;
+            quizHintUsed = false;
+            
+            ui.quizHintBtn.classList.remove('hidden');
+            ui.quizNextBtn.classList.add('hidden');
+            
+            // Reset button styles
+            ui.quizAnsBtns.forEach(btn => {
+                btn.className = "quiz-ans-btn flex-1 bg-white border border-indigo-300 text-indigo-700 font-bold rounded py-1.5 hover:bg-indigo-100 transition-colors shadow-sm";
+            });
+            
+            render();
+        }
+
+        ui.enterQuizBtn.addEventListener('click', () => {
+            pendingQuizMode = 1;
+            ui.nameModal.classList.remove('hidden');
+            ui.playerNameInput.focus();
+        });
+
+        ui.enterQuiz2Btn.addEventListener('click', () => {
+            pendingQuizMode = 2;
+            ui.nameModal.classList.remove('hidden');
+            ui.playerNameInput.focus();
+        });
+
+        ui.cancelQuizBtn.addEventListener('click', () => {
+            ui.nameModal.classList.add('hidden');
+        });
+
+        ui.startQuizSubmitBtn.addEventListener('click', () => {
+            const name = ui.playerNameInput.value.trim() || 'Player';
+            ui.quizPlayerName.textContent = name;
+            ui.nameModal.classList.add('hidden');
+            
+            activeQuizMode = pendingQuizMode;
+            correctAnswersCount = 0;
+            questionsAttemptedCount = 0;
+            quizSessionId = Date.now().toString() + '_' + Math.random().toString(36).substring(2, 9);
+            ui.quizScore.textContent = "0/0";
+            
+            ui.normalPanel.classList.add('hidden');
+            ui.quizPanel.classList.remove('hidden');
+            ui.quizButtons.classList.add('hidden');
+            ui.resetBtn.classList.add('hidden');
+            ui.legendOverlay.classList.add('hidden');
+            
+            generateQuizQuestion();
+        });
+
+        ui.exitQuizBtn.addEventListener('click', () => {
+            activeQuizMode = 0;
+            if (quizTimeoutId) clearTimeout(quizTimeoutId);
+            
+            ui.normalPanel.classList.remove('hidden');
+            ui.quizPanel.classList.add('hidden');
+            ui.quizButtons.classList.remove('hidden');
+            ui.resetBtn.classList.remove('hidden');
+            ui.legendOverlay.classList.remove('hidden');
+            
+            initPoints();
+            render();
+        });
+
+        ui.quizAnsBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (quizAnswering) return;
+                quizAnswering = true;
+                
+                ui.quizHintBtn.classList.add('hidden');
+                
+                questionsAttemptedCount++;
+                const selectedAns = e.target.dataset.ans;
+                const isCorrect = (selectedAns === currentCorrectAnswer);
+                
+                if (isCorrect) {
+                    correctAnswersCount++;
+                    e.target.classList.replace('bg-white', 'bg-emerald-500');
+                    e.target.classList.replace('text-indigo-700', 'text-white');
+                    e.target.classList.replace('border-indigo-300', 'border-emerald-600');
+                    
+                    // Automatically next question after 3 seconds if correct
+                    quizTimeoutId = setTimeout(() => {
+                        if (activeQuizMode !== 0) generateQuizQuestion();
+                    }, 3000);
+                } else {
+                    e.target.classList.replace('bg-white', 'bg-rose-500');
+                    e.target.classList.replace('text-indigo-700', 'text-white');
+                    e.target.classList.replace('border-indigo-300', 'border-rose-600');
+                    
+                    const correctBtn = Array.from(ui.quizAnsBtns).find(b => b.dataset.ans === currentCorrectAnswer);
+                    if (correctBtn) {
+                        correctBtn.classList.replace('bg-white', 'bg-emerald-200');
+                    }
+                    
+                    // Show next button for manual progression if wrong
+                    ui.quizNextBtn.classList.remove('hidden');
+                }
+                
+                // Update score display immediately using formatting: correct/attempted
+                ui.quizScore.textContent = `${correctAnswersCount}/${questionsAttemptedCount}`;
+                
+                // Redraw to show the figure and points since the user has submitted their answer
+                render();
+
+                // Synchronize data with Google Sheets backend
+                syncDataToSheet();
+            });
+        });
+        
+        ui.quizHintBtn.addEventListener('click', () => {
+            if (quizAnswering) return;
+            quizHintUsed = true;
+            ui.quizHintBtn.classList.add('hidden'); // Hide hint button after use
+            render();
+        });
+        
+        ui.quizNextBtn.addEventListener('click', () => {
+            if (activeQuizMode !== 0) generateQuizQuestion();
+        });
+
+        // Sync Data to Google Sheets Backend
+        function syncDataToSheet() {
+            if (!GOOGLE_APP_SCRIPT_URL || GOOGLE_APP_SCRIPT_URL === "") {
+                return; 
+            }
+
+            const payload = {
+                timestamp: new Date().toISOString(),
+                sessionId: quizSessionId,
+                playerName: ui.quizPlayerName.textContent,
+                mode: activeQuizMode === 1 ? "Quiz Mode 1" : "Quiz Mode 2",
+                correctAnswers: correctAnswersCount,
+                attempted: questionsAttemptedCount
+            };
+
+            fetch(GOOGLE_APP_SCRIPT_URL, {
+                method: 'POST',
+                redirect: "follow",
+                body: JSON.stringify(payload),
+                headers: {
+                    // Using text/plain ensures that CORS preflight (OPTIONS) triggers do not block the submission
+                    "Content-Type": "text/plain;charset=utf-8" 
+                }
+            })
+            .catch(e => console.error("Error updating progress on Google Sheets:", e));
+        }
+
+        // Animation Loop (just for pulsing intersection dot)
+        function animate() {
+            if (!draggedPoint) {
+                // Redraw to animate the pulsing dot when we are allowed to show the figure
+                const showFigure = (activeQuizMode === 0) || quizAnswering || quizHintUsed;
+                if (showFigure) {
+                    const intersection = findIntersection(points[0], points[1], points[2], points[3]);
+                    if(intersection.type === 'intersect') {
+                        render();
+                    }
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        // Initialization
+        initPoints();
+        
+        // Render static math variables (m, c labels) on load
+        document.querySelectorAll('.math').forEach(el => {
+            renderMath(el, el.textContent);
+        });
+
+        resize();
+        animate(); // Starts the loop
+
+    </script>
+</body>
+</html>
