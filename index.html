@@ -342,7 +342,7 @@
                 return a;
             };
             let g = gcd(A, gcd(B, C));
-            if (g > 0) { A/=g; B/=g; C/=g; }
+            if (g > 0) { A /= g; B /= g; C /= g; }
             if (A < 0 || (A === 0 && B < 0)) { A = -A; B = -B; C = -C; }
             
             // Apply unsimplified scaling factor
@@ -382,8 +382,8 @@
 
         // Find intersection of line (p1,p2) and line (p3,p4)
         function findIntersection(p1, p2, p3, p4) {
-            const numA = (p1.x*p2.y - p1.y*p2.x);
-            const numB = (p3.x*p4.y - p3.y*p4.x);
+            const numA = (p1.x * p2.y - p1.y * p2.x);
+            const numB = (p3.x * p4.y - p3.y * p4.x);
             const dx12 = p1.x - p2.x;
             const dy12 = p1.y - p2.y;
             const dx34 = p3.x - p4.x;
@@ -393,8 +393,8 @@
 
             if (Math.abs(denom) < 1e-6) {
                 // Lines are parallel or coincident
-                // Test distance from p3 to line (p1,p2) using mathematically correct Line Equation Distance Numerator
-                const C1 = dx12 * p1.y - dy12 * p1.x; // Constant C for line 1 where Eq is: dy12*x - dx12*y + C1 = 0
+                // Test distance from p3 to line (p1,p2) using Line Equation Distance Numerator
+                const C1 = dx12 * p1.y - dy12 * p1.x;
                 const distNumerator = Math.abs(dy12 * p3.x - dx12 * p3.y + C1);
                 
                 if (distNumerator < 1e-4) {
@@ -481,7 +481,7 @@
 
             // Axis labels/ticks
             ctx.fillStyle = '#64748b'; // slate-500
-            ctx.font = '14px Inter'; // ENLARGED FONT
+            ctx.font = '14px Inter';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
             for (let x = firstX; x <= lastX; x++) {
@@ -538,6 +538,63 @@
             
             ctx.shadowColor = 'transparent';
             ctx.shadowBlur = 0;
+        }
+
+        function drawCoincidentMarquee(p1, p2) {
+            const s1 = toScreen(p1.x, p1.y);
+            const s2 = toScreen(p2.x, p2.y);
+            const sdx = s2.sx - s1.sx;
+            const sdy = s2.sy - s1.sy;
+            const len = Math.hypot(sdx, sdy);
+
+            if (len < 1e-5) return;
+
+            // Unit direction vector along the line in screen coordinates
+            const ux = sdx / len;
+            const uy = sdy / len;
+
+            // Project canvas center onto the line for a stable, jitter-free marquee span
+            const cx = width / 2;
+            const cy = height / 2;
+            const t = (cx - s1.sx) * ux + (cy - s1.sy) * uy;
+            const projX = s1.sx + t * ux;
+            const projY = s1.sy + t * uy;
+
+            const span = Math.hypot(width, height) + 100;
+            const startX = projX - ux * span;
+            const startY = projY - uy * span;
+            const endX = projX + ux * span;
+            const endY = projY + uy * span;
+
+            ctx.save();
+
+            // 1. Base solid blue stroke with subtle purple glow
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.strokeStyle = '#3b82f6'; // Blue (Line A)
+            ctx.lineWidth = 4;
+            ctx.shadowColor = 'rgba(139, 92, 246, 0.45)';
+            ctx.shadowBlur = 10;
+            ctx.stroke();
+
+            // Reset shadow before drawing the animated red dashes
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+
+            // 2. Animated red dashed overlay to create the blue-and-red marquee
+            const dashLength = 18;
+            const speed = 30; // Lower value = faster marquee
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            ctx.lineTo(endX, endY);
+            ctx.strokeStyle = '#ef4444'; // Red (Line B)
+            ctx.lineWidth = 4;
+            ctx.setLineDash([dashLength, dashLength]);
+            ctx.lineDashOffset = -(performance.now() / speed) % (dashLength * 2);
+            ctx.stroke();
+
+            ctx.restore();
         }
 
         function drawControlPoints() {
@@ -631,19 +688,27 @@
         function render() {
             drawGridAndAxes();
 
-            // Determine if the visual diagram should be shown
-            const showFigure = (activeQuizMode === 0) || quizAnswering || quizHintUsed;
-
-            if (showFigure) {
-                // Draw Lines
-                drawInfiniteLine(points[0], points[1], points[0].color);
-                drawInfiniteLine(points[2], points[3], points[2].color);
-            }
-
             // Math computations (with active quiz scale factors)
             const infoA = getLineInfo(points[0], points[1], activeQuizMode !== 0 ? quizScaleA : 1);
             const infoB = getLineInfo(points[2], points[3], activeQuizMode !== 0 ? quizScaleB : 1);
             const intersection = findIntersection(points[0], points[1], points[2], points[3]);
+
+            // Determine if the visual diagram should be shown
+            const showFigure = (activeQuizMode === 0) || quizAnswering || quizHintUsed;
+
+            if (showFigure) {
+                const lenA = Math.hypot(points[1].x - points[0].x, points[1].y - points[0].y);
+                const lenB = Math.hypot(points[3].x - points[2].x, points[3].y - points[2].y);
+
+                if (intersection.type === 'coincident' && lenA > 1e-5 && lenB > 1e-5) {
+                    // Draw animated blue & red colour marquee when lines overlap perfectly
+                    drawCoincidentMarquee(points[0], points[1]);
+                } else {
+                    // Draw standard individual lines
+                    drawInfiniteLine(points[0], points[1], points[0].color);
+                    drawInfiniteLine(points[2], points[3], points[2].color);
+                }
+            }
 
             // Draw intersection marker if applicable
             if (showFigure && intersection.type === 'intersect') {
@@ -669,7 +734,7 @@
 
                 // Coordinate label on canvas
                 ctx.fillStyle = '#065f46'; // Emerald 900
-                ctx.font = '600 16px Inter'; // ENLARGED FONT
+                ctx.font = '600 16px Inter';
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'bottom';
                 
@@ -802,18 +867,18 @@
             } else if (currentCorrectAnswer === 'parallel') {
                 mB = mA;
                 cB = cA;
-                while(cB === cA) { cB = Math.floor(Math.random() * 7) - 3; }
+                while (cB === cA) { cB = Math.floor(Math.random() * 7) - 3; }
             } else {
                 mB = mA;
-                while(mB === mA) { mB = Math.floor(Math.random() * 5) - 2; }
+                while (mB === mA) { mB = Math.floor(Math.random() * 5) - 2; }
                 cB = Math.floor(Math.random() * 7) - 3;
             }
             
             // Convert to coordinates and set points
-            points[0] = { id: 'A1', line: 'A', x: -3, y: mA*(-3) + cA, color: '#3b82f6' };
-            points[1] = { id: 'A2', line: 'A', x: 3,  y: mA*(3) + cA,  color: '#3b82f6' };
-            points[2] = { id: 'B1', line: 'B', x: -3, y: mB*(-3) + cB, color: '#ef4444' };
-            points[3] = { id: 'B2', line: 'B', x: 3,  y: mB*(3) + cB,  color: '#ef4444' };
+            points[0] = { id: 'A1', line: 'A', x: -3, y: mA * (-3) + cA, color: '#3b82f6' };
+            points[1] = { id: 'A2', line: 'A', x: 3,  y: mA * (3) + cA,  color: '#3b82f6' };
+            points[2] = { id: 'B1', line: 'B', x: -3, y: mB * (-3) + cB, color: '#ef4444' };
+            points[3] = { id: 'B2', line: 'B', x: 3,  y: mB * (3) + cB,  color: '#ef4444' };
             
             quizAnswering = false;
             quizHintUsed = false;
@@ -843,6 +908,12 @@
 
         ui.cancelQuizBtn.addEventListener('click', () => {
             ui.nameModal.classList.add('hidden');
+        });
+
+        ui.playerNameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                ui.startQuizSubmitBtn.click();
+            }
         });
 
         ui.startQuizSubmitBtn.addEventListener('click', () => {
@@ -963,16 +1034,13 @@
             .catch(e => console.error("Error updating progress on Google Sheets:", e));
         }
 
-        // Animation Loop (just for pulsing intersection dot)
+        // Animation Loop (for pulsing intersection dot and coincident line marquee)
         function animate() {
-            if (!draggedPoint) {
-                // Redraw to animate the pulsing dot when we are allowed to show the figure
-                const showFigure = (activeQuizMode === 0) || quizAnswering || quizHintUsed;
-                if (showFigure) {
-                    const intersection = findIntersection(points[0], points[1], points[2], points[3]);
-                    if(intersection.type === 'intersect') {
-                        render();
-                    }
+            const showFigure = (activeQuizMode === 0) || quizAnswering || quizHintUsed;
+            if (showFigure) {
+                const intersection = findIntersection(points[0], points[1], points[2], points[3]);
+                if (intersection.type === 'intersect' || intersection.type === 'coincident') {
+                    render();
                 }
             }
             requestAnimationFrame(animate);
