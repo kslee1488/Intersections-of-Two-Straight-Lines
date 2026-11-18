@@ -127,12 +127,15 @@
                 <button id="exit-quiz-btn" class="w-full text-xs text-indigo-500 hover:text-indigo-700 underline text-center">Exit Quiz Mode</button>
             </div>
 
-            <div id="quiz-buttons" class="flex gap-2 mt-2">
-                <button id="enter-quiz-btn" class="flex-1 py-2.5 px-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm text-sm">
-                    Quiz Mode 1<br><span class="text-xs font-normal opacity-80">(y = mx + c)</span>
+            <div id="quiz-buttons" class="grid grid-cols-2 gap-2 mt-2">
+                <button id="enter-quiz-btn" class="py-2 px-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-sm text-sm">
+                    Quiz Mode 1<br><span class="text-[11px] font-normal opacity-85">(y = mx + c)</span>
                 </button>
-                <button id="enter-quiz2-btn" class="flex-1 py-2.5 px-2 bg-violet-600 text-white font-medium rounded-lg hover:bg-violet-700 transition-colors shadow-sm text-sm">
-                    Quiz Mode 2<br><span class="text-xs font-normal opacity-80">(Ax + By + C = 0)</span>
+                <button id="enter-quiz2-btn" class="py-2 px-2 bg-violet-600 text-white font-medium rounded-lg hover:bg-violet-700 transition-colors shadow-sm text-sm">
+                    Quiz Mode 2<br><span class="text-[11px] font-normal opacity-85">(Ax + By + C = 0)</span>
+                </button>
+                <button id="enter-quiz3-btn" class="col-span-2 py-2 px-3 bg-fuchsia-600 text-white font-medium rounded-lg hover:bg-fuchsia-700 transition-colors shadow-sm text-sm">
+                    Quiz Mode 3 <span class="text-xs font-normal opacity-85">(Mixed)</span>
                 </button>
             </div>
 
@@ -198,6 +201,7 @@
             quizButtons: document.getElementById('quiz-buttons'),
             enterQuizBtn: document.getElementById('enter-quiz-btn'),
             enterQuiz2Btn: document.getElementById('enter-quiz2-btn'),
+            enterQuiz3Btn: document.getElementById('enter-quiz3-btn'),
             resetBtn: document.getElementById('reset-btn'),
             nameModal: document.getElementById('name-modal'),
             playerNameInput: document.getElementById('player-name-input'),
@@ -218,7 +222,7 @@
         const GOOGLE_APP_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDtmHzSfdYwN3EO7UpJlXJMs4SPTyxfYtGrxG_RGqKS3o1XYqbyXVg04j52a5L5I8/exec";
         
         // Quiz State
-        let activeQuizMode = 0; // 0: none, 1: Quiz Mode 1, 2: Quiz Mode 2
+        let activeQuizMode = 0; // 0: none, 1: Quiz Mode 1, 2: Quiz Mode 2, 3: Quiz Mode 3
         let pendingQuizMode = 0;
         let correctAnswersCount = 0;
         let questionsAttemptedCount = 0;
@@ -228,6 +232,7 @@
         let quizTimeoutId = null;
         let quizScaleA = 1;
         let quizScaleB = 1;
+        let quiz3GeneralLine = 'B'; // Tracks which line ('A' or 'B') uses general form in Quiz Mode 3
         let quizSessionId = '';
 
         // Coordinate System Setup
@@ -629,20 +634,24 @@
         }
 
         function updateUI(lineA, lineB, intersection) {
+            // Determine whether each line should be rendered in General Form (Ax + By + C = 0)
+            const isGenA = (activeQuizMode === 2) || (activeQuizMode === 3 && quiz3GeneralLine === 'A');
+            const isGenB = (activeQuizMode === 2) || (activeQuizMode === 3 && quiz3GeneralLine === 'B');
+
             // Update Line A
-            renderMath(ui.eqA, activeQuizMode === 2 ? lineA.eqGen : lineA.eq);
+            renderMath(ui.eqA, isGenA ? lineA.eqGen : lineA.eq);
             renderMath(ui.slopeA, lineA.isVertical ? '\\text{Undef.}' : fmt(lineA.m));
             renderMath(ui.yintA, lineA.isVertical ? '\\text{None}' : fmt(lineA.c));
             
-            if (activeQuizMode === 2) ui.detailsA.classList.add('hidden');
+            if (isGenA) ui.detailsA.classList.add('hidden');
             else ui.detailsA.classList.remove('hidden');
 
             // Update Line B
-            renderMath(ui.eqB, activeQuizMode === 2 ? lineB.eqGen : lineB.eq);
+            renderMath(ui.eqB, isGenB ? lineB.eqGen : lineB.eq);
             renderMath(ui.slopeB, lineB.isVertical ? '\\text{Undef.}' : fmt(lineB.m));
             renderMath(ui.yintB, lineB.isVertical ? '\\text{None}' : fmt(lineB.c));
 
-            if (activeQuizMode === 2) ui.detailsB.classList.add('hidden');
+            if (isGenB) ui.detailsB.classList.add('hidden');
             else ui.detailsB.classList.remove('hidden');
 
             if (activeQuizMode !== 0) return; // Don't update or show the answer panel in quiz mode
@@ -847,6 +856,7 @@
             
             quizScaleA = 1;
             quizScaleB = 1;
+            quiz3GeneralLine = Math.random() < 0.5 ? 'A' : 'B';
 
             // Generate random readable parameters (-2 to 2 for slope, -3 to 3 for intercept)
             let mA = Math.floor(Math.random() * 5) - 2; 
@@ -902,6 +912,12 @@
 
         ui.enterQuiz2Btn.addEventListener('click', () => {
             pendingQuizMode = 2;
+            ui.nameModal.classList.remove('hidden');
+            ui.playerNameInput.focus();
+        });
+
+        ui.enterQuiz3Btn.addEventListener('click', () => {
+            pendingQuizMode = 3;
             ui.nameModal.classList.remove('hidden');
             ui.playerNameInput.focus();
         });
@@ -1017,7 +1033,7 @@
                 timestamp: new Date().toISOString(),
                 sessionId: quizSessionId,
                 playerName: ui.quizPlayerName.textContent,
-                mode: activeQuizMode === 1 ? "Quiz Mode 1" : "Quiz Mode 2",
+                mode: `Quiz Mode ${activeQuizMode}`,
                 correctAnswers: correctAnswersCount,
                 attempted: questionsAttemptedCount
             };
